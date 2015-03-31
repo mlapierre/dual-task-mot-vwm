@@ -1,0 +1,13 @@
+function dualLineGraphBySession(name, numSessions, trialsPerCondition, xVals, yLim, LLoc)
+    figure('Name',name);
+    
+    subplot(2,1,1);
+    linePerSessPerCond(numSessions, trialsPerCondition, xVals(:,1:3), yLim(1,:),...
+        'MOT',...
+        {'Single','MOTRes1st','VWMRes1st'}, LLoc{1});
+
+    subplot(2,1,2);
+    linePerSessPerCond(numSessions, trialsPerCondition, xVals(:,4:6), yLim(2,:),...
+        'VWM',...
+        {'Single','MOTRes1st','VWMRes1st'}, LLoc{2});
+end
