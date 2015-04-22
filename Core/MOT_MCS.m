@@ -21,9 +21,9 @@ function speed = MOT_MCS(subject_name, num_trials, base_speed, speed_inc)
         fprintf('Data and config loaded from %s\n', data_fn);
     end
 
-    %[data, config] = MOT_MCS(subject_name, num_trials, base_speed, speed_inc);
-    data.correct = gen_binornd_correct([0.99 0.85 0.75 0.25 0.05], num_trials);
-    data.speed = sort(repmat(base_speed + (-2*speed_inc:speed_inc:2*speed_inc), 1, num_trials/5)); % test
+    [data, config] = MOT_MCS(subject_name, num_trials, base_speed, speed_inc);
+    %data.correct = gen_binornd_correct([0.99 0.85 0.75 0.25 0.05], num_trials);
+    %data.speed = sort(repmat(base_speed + (-2*speed_inc:speed_inc:2*speed_inc), 1, num_trials/5)); % test
     config.ResultsFN = [];
     fprintf('Estimating threshold...\n');
     [data.est_speed data.q1] = CalcThreshold([data.speed], [data.correct], 0.75, .5);
