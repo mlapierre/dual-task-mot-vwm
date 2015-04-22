@@ -5,7 +5,7 @@ classdef SessionConfig
         CueTime = 2;
         CueFreq = 0.33;
         InterQuadrantPaddingColour = [62 62 62];
-        ScreenWidth = 38.5; %52 / 38.5
+        ScreenWidth = 52;%38.5; %52 / 38.5
         ViewingDistance = 68; %68 / 60
     end
     
@@ -113,9 +113,6 @@ classdef SessionConfig
             %obj.MinSep = round(sqrt(obj.ImageWidth*obj.ImageWidth*2));
             obj.TimeTrialTotal = obj.CueTime + obj.TimeTrialTest;
             obj.BackupSavedTrialsFN = [obj.BackupFolder datestr(now,30) '_' subjectName '_' obj.ExperimentName '_' obj.ExperimentVersion '_trial_data.mat'];
-            obj.MaskFileName = GetFullPath('Images\mask\mask.jpg');
-            obj.ImgPath = GetFullPath('Images\64x64\');
-            obj.ImgFileList = GetFullPath('Images\filelist_64x64.txt');
             %obj.Gamma = factorial(obj.NumTargetsPerQuadrant)/(factorial(obj.NumObjectsPerQuadrant)/factorial(obj.NumTargetsPerQuadrant));
             obj.Gamma = 0.5;
             if obj.Debug == 1

@@ -1,8 +1,8 @@
 classdef MOT_SessionConfig < SessionConfig
     properties (Constant = true)
         StimuliType = StimuliType.Dot;
-        ExperimentName = 'MOT_VWM_3';
-        ExperimentVersion = '0.0.1';
+        ExperimentName = 'MOT_VWM_2';
+        ExperimentVersion = '2.0.1';
         TaskTypes = [TaskType.MOT TaskType.VWM];
         ResponseType = ResponseType.Probe;
         TargetCueColour = [255 0 0]';
@@ -24,8 +24,8 @@ classdef MOT_SessionConfig < SessionConfig
         QuadrantWidthInDegrees = 15.3;
         QuadrantHeightInDegrees = 11.5;
         FlipConditionOrder;
-        NumMOTObjects = 10;
-        NumMOTTargets = 5;
+        NumMOTObjects = 8;
+        NumMOTTargets = 4;
         NumVWMObjects = 4;
         VWMObjectDistanceFactor = 5;
         VWMObjectDistance

@@ -23,6 +23,7 @@ classdef MOTWindow
             %obj.OldVisualDebugLevel = Screen('Preference', 'VisualDebugLevel', 4);
             %obj.OldSupressAllWarnings = Screen('Preference', 'SuppressAllWarnings', 0);
             %Screen('Preference','Verbosity',4); 
+             Screen('Preference','SkipSyncTests', 1); % only while testing
             obj.OldVisualDebugLevel = Screen('Preference', 'VisualDebugLevel', 1);
             obj.OldSupressAllWarnings = Screen('Preference', 'SuppressAllWarnings', 0);
             Screen('Preference','Verbosity',1); 
