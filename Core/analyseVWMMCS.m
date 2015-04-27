@@ -8,7 +8,7 @@ function [disc_count q] = analyseVWMMCS(subject_name, attempt_num)
     s = [];
     c = [];
     for i = attempt_num
-        s = [s vwm_mcs_data{i}.speed];
+        s = [s vwm_mcs_data{i}.num_discs];
         c = [c vwm_mcs_data{i}.correct];
     end
     graphVWMMCS(s, c, attempt_num);

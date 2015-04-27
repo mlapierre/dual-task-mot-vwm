@@ -40,9 +40,7 @@ function StartMOTMCS(subject_name)
     MOT_MCS(subject_name, 50, speed, 1);
 
     fprintf('Estimating final threshold based on last 2 attempts...\n');
-    if ~exist('mot_mcs_data', 'var')
-        load(data_fn);
-    end
+    load(data_fn);
     nAttempts = size(mot_mcs_data, 2);
     [mot_mcs_data{nAttempts}.speedFinal mot_mcs_data{nAttempts}.qFinal] = analyseMOTMCS(subject_name, [nAttempts nAttempts-1]);
     

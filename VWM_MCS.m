@@ -16,18 +16,23 @@ function est_discs = VWM_MCS(subject_name, num_trials, disc_range, speed)
     end
     fprintf('Participant: %s\n', subject_name);
     data_fn = ['data' filesep subject_name '.mat'];
-    if exist(data_fn, 'file') && ~exist('mot_mcs_data', 'var')
+    if exist(data_fn, 'file') && ~exist('vwm_mcs_data', 'var')
         load(data_fn);
         fprintf('Data and config loaded from %s\n', data_fn);
     end
     
     [data, config] = VWM_MCS_trials(subject_name, num_trials, disc_range, speed);
-    % Comment out the line above and uncomment the 3 lines below to
+    % Comment out the line above and uncomment the test lines below to
     % simulate trials with approximate performance for each disc count as
     % specified in the line immediately below.
-    %data.correct = gen_binornd_correct([0.99 0.85 0.75 0.25 0.05], num_trials); % test
-    %data.speed = sort(repmat(disc_range, 1, num_trials/size(disc_range, 2))); % test
-    %config.ResultsFN = []; % test
+%     if size(disc_range, 2) == 5 % test
+%         p = [0.99 0.85 0.75 0.25 0.05]; % test
+%     else % test
+%         p = [0.35 0.25 0.05]; % test
+%     end % test
+%     data.correct = gen_binornd_correct(p, num_trials); % test
+%     data.num_discs = sort(repmat(disc_range, 1, num_trials/size(disc_range, 2))); % test
+%     config.ResultsFN = []; % test
     
     if exist('vwm_mcs_data', 'var')
         attempt_num = size(vwm_mcs_data, 2) + 1;
@@ -43,6 +48,7 @@ function est_discs = VWM_MCS(subject_name, num_trials, disc_range, speed)
     end
     
     [est_discs q] = analyseVWMMCS(subject_name, attempt_num);
+    est_discs = round(est_discs);
 end
 
 function c = gen_binornd_correct(p, n)

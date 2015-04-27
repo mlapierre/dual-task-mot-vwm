@@ -43,7 +43,13 @@ function StartVWMMCS(subject_name)
         fprintf('MOT discs will move at speed %f\n', speed);
     end
     disc_count = VWM_MCS(subject_name, 50, 3:7, speed);
-
+    if disc_count < 3
+        fprintf('In the next stage the disc count cannot be less than 3. The participant may require practice to reach the expected level of performance.\n');
+    end
+    if disc_count < 4
+        disc_count = 4;
+    end
+    
     fprintf('Please press ''y'' to begin the second stage, or any other key to quit...\n');
     char = GetKbChar();
     if char ~= 'y'
@@ -53,12 +59,15 @@ function StartVWMMCS(subject_name)
     VWM_MCS(subject_name, 60, disc_count-1:disc_count+1, speed);
 
     fprintf('Estimating final threshold based on last 2 attempts...\n');
-    if ~exist('vwm_mcs_data', 'var')
-        load(data_fn);
-    end
+    load(data_fn);
     nAttempts = size(vwm_mcs_data, 2);
-    [vwm_mcs_data{nAttempts}.disc_count_final vwm_mcs_data{nAttempts}.qFinal] = analyseVWMMCS(subject_name, [nAttempts nAttempts-1]);
+    [disc_count vwm_mcs_data{nAttempts}.qFinal] = analyseVWMMCS(subject_name, [nAttempts nAttempts-1]);
+    if disc_count < 3
+        fprintf('Disc count cannot be less than 3. The participant may require practice to reach the expected level of performance.\n');
+        disc_count = 3;
+    end
     
+    vwm_mcs_data{nAttempts}.disc_count_final = disc_count;
     save(data_fn, 'vwm_mcs_data', 'vwm_mcs_config', '-append');
     ListenChar(0);
 end
