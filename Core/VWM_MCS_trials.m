@@ -1,41 +1,39 @@
-function [data, config] = MOT_MCS_trials(subject_name, num_trials, base_speed, speed_inc)
-% MOT_MCS_trials MOT calibration via the method of constant stimuli
-%   MOT calibration
+function [data, config] = VWM_MCS_trials(subject_name, num_trials, disc_range, speed)
+% VWM_MCS_trials VWM calibration via the method of constant stimuli
+%   VWM calibration
 %   subject_name: The name of the participant.
 %   num_trials:   The number of trials on which the participant will be tested.
-%   base_speed:   The base speed at which the dots will move, i.e., the speed
-%                 at the middle of the range of 5 speeds.
-%   speed_inc:    The amount by which the speed increments or decrements.
-%                 E.g, if base_speed is 10 and speed_inc is 2 then the
-%                 tested speeds will be 6, 8, 10, 12, and 14.
+%   disc_range:   The range of number of discs that will be displayed.
 %
-%   The first stage of calibration should start with the base_speed set to
-%   10, or higher if the participant has played a lot of action video
-%   games. Use AnalyseMOTMCS to analyse the results. If performance is too
+%   The first stage of calibration should start with the disc_range set to
+%   3:7. Use AnalyseVWMMCS to analyse the results. If performance is too
 %   inconsistent, or too consistently high or low, the first stage should
-%   be repeated with a more suitable base speed.
+%   be repeated with a more suitable range.
 %
-%   The speed_inc for the second stage should be set to 1, and the
-%   base_speed will depend on the participant's performance during the
-%   first stage.
+%   The disc_range for the second stage should be set to according to the 
+%   participant's performance during the first stage. It is expected that
+%   most participants will perform best when 4 discs are displayed, and so
+%   the disc_range for the second stage would most likely be 3:5
 
     try
-        io_ = MOTWindow();
-        config = MOT_SessionConfig(io_, subject_name, 1);
 
-        % Distribute speeds and expected responses evenly across trials
-        speedLevels = -2*speed_inc:speed_inc:2*speed_inc;
-        speeds = repmat(speedLevels + base_speed, 1, num_trials/size(speedLevels,2));
-        probeFlags = [zeros(num_trials/2,1); ones(num_trials/2,1)];
+        io_ = MOTWindow();
+        config = MOT_SessionConfig(io_, 'subject_name', 1);
+
+        % Randomly arrange an equal number of VWM discs
+        vwm_objects = repmat(disc_range, 1, num_trials/size(disc_range, 2));
+        probeFlags = [zeros(1, num_trials/2) ones(1, num_trials/2)];
 
         % Generate Trials
         for trial_num = 1:num_trials
             io_.DisplayMessage(sprintf('Loading %d/%d...',trial_num, num_trials));
-            trial = MOT_Trial(config, io_, [TaskType.MOT TaskType.VWM], speeds(trial_num), QuadrantLayout.All, []);
-            trial.Condition = Condition.PerformMOT;
+            config.NumVWMObjects = vwm_objects(trial_num);
+            trial = MOT_Trial(config, io_, [TaskType.MOT TaskType.VWM], speed, QuadrantLayout.All, []);
+            trial.Condition = Condition.PerformVWM;
             trial.Positions = trial.GeneratePositions();
             trial.ValidProbe = probeFlags(trial_num);
-            trial.Speed = speeds(trial_num);
+            trial.NumVWMObjects = vwm_objects(trial_num);
+            trial.Speed = speed;
 
             trials(trial_num) = trial;
         end
@@ -46,22 +44,23 @@ function [data, config] = MOT_MCS_trials(subject_name, num_trials, base_speed, s
         delete(io_);
         rethrow(ERROR);
     end
-    
+
     % Collect data
     try
         data.trialStart = zeros(1,num_trials);
         data.trialDisplayEnd = zeros(1,num_trials);
         data.trialResponseEnd = zeros(1,num_trials);
         data.correct = zeros(1,num_trials);
-        data.speed = zeros(1,num_trials);
+        data.num_discs = zeros(1,num_trials);
 
-        data.startTime = GetSecs;
+        startTime = GetSecs;
         for i=1:num_trials
             message = ['Trial ' num2str(i) ' of ' num2str(num_trials) '\n\n'...
                        'Loading...\n\n'];
             io_.DisplayMessage(message);
             save(config.ResultsFN, 'config', 'data');        
             message = ['Trial ' num2str(i) ' of ' num2str(num_trials) '\n\n'...
+                       num2str(trials(i).NumVWMObjects) ' objects to remember\n'...
                        'Press any key to begin.\n\n'];
             io_.DisplayMessageAndWait(message);
 
@@ -74,13 +73,13 @@ function [data, config] = MOT_MCS_trials(subject_name, num_trials, base_speed, s
 
             output = trials(i).GetResponse(finPos, TaskType.VWM, trials(i).ValidProbe);
             data.correct(i) = output.correct;
-            data.speed(i) = trials(i).Speed;
+            data.num_discs(i) = trials(i).NumVWMObjects;
 
             data.trialResponseEnd(i) = GetSecs;
         end
-        data.endTime = GetSecs;
+        endTime = GetSecs;
         save(config.ResultsFN, 'config', 'data');        
-        io_.DisplayMessageAndWait('This stage of the experiment is complete, thank you.\nPlease inform the researcher so you can begin the next stage.');
+        io_.DisplayMessageAndWait('This stage of the experiment is complete, thank you.\nPlease inform the researcher.');
         Screen('CloseAll');
         delete(io_);
     catch ERROR
@@ -89,3 +88,4 @@ function [data, config] = MOT_MCS_trials(subject_name, num_trials, base_speed, s
         rethrow(ERROR);
     end
 end
+

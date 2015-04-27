@@ -1,95 +1,61 @@
-clear all;
+function est_discs = VWM_MCS(subject_name, num_trials, disc_range, speed)
+%   VWM calibration
+%   subject_name: The name of the participant.
+%   num_trials:   The number of trials on which the participant will be tested.
+%   disc_range:   The range of number of discs that will be displayed.
 
-io_ = MOTWindow();
-config = MOT_SessionConfig(io_, 'as1_vwm_mcs_1', 1);
-DotWidthScaleFactor = 0.6;
-MinSepScaleFactor = 0.8;
-config.DotWidth = round(DotWidthScaleFactor/config.DegPerPixel);
-config.MinSep = round(MinSepScaleFactor/config.DegPerPixel); 
-config.NumMOTObjects = 10;
-config.NumMOTTargets = 5;
-
-numTrials = 60;
-initialStim = 4;
-speed = 16;
-
-index = Shuffle(1:numTrials);
-
-stim_inc = 1;
-stimLevels = [initialStim - stim_inc...
-                initialStim ...
-                initialStim + stim_inc...
-                ];
-% Randomly arrange an equal number of each stimLevel
-% For each stimLevel, there should be an equal number of changes (i.e., 50% change, %50 no change)
-vwm_objects = repmat(stimLevels, 1, numTrials/size(stimLevels,2));
-%speeds = speeds(:,index);
-
-% determine for each trial whether the MOT probe is a target
-vwmProbeFlags = [zeros(numTrials/2,1); ones(numTrials/2,1)];
-%probeFlags = [1 1 1 1 1];
-probeFlags = Shuffle(vwmProbeFlags);
-
-%% Generate Trials
-
-for trial_num = 1:numTrials
-    io_.DisplayMessage(sprintf('Loading %d/%d...',trial_num, numTrials));
-    config.NumVWMObjects = vwm_objects(trial_num);
-    trial = MOT_Trial(config, io_, [TaskType.MOT TaskType.VWM], speed, QuadrantLayout.All, []);
-    trial.Condition = Condition.PerformVWM;
-    trial.Positions = trial.GeneratePositions();
-    trial.ValidProbe = probeFlags(trial_num);
-    trial.NumVWMObjects = vwm_objects(trial_num);
-    trial.Speed = speed;
+    if nargin < 1
+        subject_name = '';
+    end
+    [valid, subject_name] = isValidSubjectName(subject_name);
+    if ~valid
+        return
+    end
+    if mod(num_trials, size(disc_range, 2)) ~= 0
+       error('disc_range must be able to evenly span num_trials'); 
+    end
+    fprintf('Participant: %s\n', subject_name);
+    data_fn = ['data' filesep subject_name '.mat'];
+    if exist(data_fn, 'file') && ~exist('mot_mcs_data', 'var')
+        load(data_fn);
+        fprintf('Data and config loaded from %s\n', data_fn);
+    end
     
-    trials(trial_num) = trial;
+    [data, config] = VWM_MCS_trials(subject_name, num_trials, disc_range, speed);
+    % Comment out the line above and uncomment the 3 lines below to
+    % simulate trials with approximate performance for each disc count as
+    % specified in the line immediately below.
+    %data.correct = gen_binornd_correct([0.99 0.85 0.75 0.25 0.05], num_trials); % test
+    %data.speed = sort(repmat(disc_range, 1, num_trials/size(disc_range, 2))); % test
+    %config.ResultsFN = []; % test
+    
+    if exist('vwm_mcs_data', 'var')
+        attempt_num = size(vwm_mcs_data, 2) + 1;
+    else
+        attempt_num = 1;
+    end
+    vwm_mcs_data{attempt_num} = data;
+    vwm_mcs_config{attempt_num} = config;
+    if exist(data_fn, 'file')
+        save(data_fn, 'vwm_mcs_data', 'vwm_mcs_config', '-append');
+    else
+        save(data_fn, 'vwm_mcs_data', 'vwm_mcs_config');
+    end
+    
+    [est_discs q] = analyseVWMMCS(subject_name, attempt_num);
 end
 
-trials = Shuffle(trials);
-
-%% Collect data
-try
-    trialStart = zeros(1,numTrials);
-    trialDisplayEnd = zeros(1,numTrials);
-    trialResponseEnd = zeros(1,numTrials);
-    correct = zeros(1,numTrials);
-    speed = zeros(1,numTrials);
+function c = gen_binornd_correct(p, n)
+    tPerS = n / size(p, 2);
+    nS = n / tPerS;
+    nC = binornd(repmat(tPerS, 1, nS), p);
     
-    startTime = GetSecs;
-    for i=1:numTrials
-        message = ['Trial ' num2str(i) ' of ' num2str(numTrials) '\n\n'...
-                   'Loading...\n\n'];
-        io_.DisplayMessage(message);
-        save(config.ResultsFN, 'correct','vwm_objects', 'speed', 'trials', 'trialStart', 'trialDisplayEnd', 'trialResponseEnd');        
-        message = ['Trial ' num2str(i) ' of ' num2str(numTrials) '\n\n'...
-                   num2str(trials(i).NumVWMObjects) ' objects to remember\n'...
-                   'Press any key to begin.\n\n'];
-        io_.DisplayMessageAndWait(message);
-
-        trialStart(i) = GetSecs;
-        
-        [finPos missedFrames] = trials(i).DisplayTrial();
-        trials(i).DisplayProbe(finPos, trials(i).ValidProbe);
-        
-        trialDisplayEnd(i) = GetSecs;
-        
-        output = trials(i).GetResponse(finPos, TaskType.VWM, trials(i).ValidProbe);
-        correct(i) = output.correct;
-        
-        trialResponseEnd(i) = GetSecs;
+    c = zeros(1, n);
+    for i = 1:nS
+       for j = 1:tPerS
+          if j <= nC(i)
+            c((i-1)*tPerS+j) = 1;
+          end
+       end
     end
-    endTime = GetSecs;
-    save(config.SessionFN, 'config','trials','correct','vwm_objects','startTime','endTime','trialStart', 'trialDisplayEnd', 'trialResponseEnd');
-    if exist(config.SessionFN, 'file') && exist(config.ResultsFN, 'file')
-        delete(config.ResultsFN);
-    end
-    io_.DisplayMessageAndWait('This stage of the experiment is complete, thank you.\nPlease inform the researcher.');
-    
-    %[s q] = CalcThreshold([results.Speed], [results.MOTCorrect], 0.75, .5)
-    Screen('CloseAll');
-    delete(io_);
-catch ERROR
-    Screen('CloseAll');
-    delete(io_);
-    rethrow(ERROR);
 end
