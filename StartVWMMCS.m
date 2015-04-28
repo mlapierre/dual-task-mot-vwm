@@ -79,7 +79,7 @@ function StartVWMMCS(subject_name)
         disc_count = 3;
     end
     
-    vwm_mcs_data{nAttempts}.disc_count_final = disc_count;
+    vwm_mcs_data{nAttempts}.disc_count_final = round(disc_count);
     save(data_fn, 'vwm_mcs_data', 'vwm_mcs_config', '-append');
     ListenChar(0);
 end
