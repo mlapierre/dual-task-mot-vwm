@@ -1,5 +1,46 @@
 Dual-task Multiple Object Tracking (MOT) and Visual Working Memory (VWM) Experiment
 
+Instructions
+============
+
+These instructions assume an understanding of the design of the experiment.
+
+Use StartSession to begin each session of the experiment:
+
+    StartSession(subject_name, session_num, num_trials_per_condition)
+
+The only required argument is subject_name. The name can only contain letters, 
+numbers, or underscores. E.g.
+
+    StartSession('mark_l')
+
+The 2nd argument, session_num, specifies the number of sessions that will be 
+run, one after the other. If the argument is not specified one session will 
+be run. Finally, num_trials_per_condition specifies how many trials there will
+be percondition, per session. The default is 16. Thus the command above would
+execute one session with 16 trials per condition. However, the following would 
+execute 3 sessions with 32 trials per condition:
+
+    StartSession('mark_l', 3, 32)
+
+Note that there are 4 conditions, but each condition is split across 2 blocks
+of half the number of trials. So the default setting of 16 trials per condition
+will execute 8 blocks of 8 trials each.
+
+The participant will be guided through calibration if they have no done so 
+already. It's possible to execute calibration separately (and individually for
+each task type), but that is not necessary if StartSession is used, unless
+calibration must be repeated.
+See the instructions below for details of the procedure.
+
+By default a practice session will precede the test session each time 
+StartSession is executed. However, if multiple sessions are specified there
+will be only one practice session. The practice session will involve 8 trials 
+per condition (this should be sufficient, but can be modified in StartSession.m)
+
+Results are saved after each session to a .mat file in the data folder with the
+participant's name. Make sure the name is unique to each participant.
+
 Calibration Instructions - MOT
 ==============================
 

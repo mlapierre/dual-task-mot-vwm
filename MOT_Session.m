@@ -27,10 +27,6 @@ classdef MOT_Session < Session
                 obj.Config.TestConditionTypes = circshift(obj.Config.TestConditionTypes, [0 obj.Config.SessionNum-1]);
                 obj.Config.TestConditionTypes = [obj.Config.TestConditionTypes fliplr(obj.Config.TestConditionTypes)];
                 disp(obj.Config.TestConditionTypes);
-                % The number of conditions is effectively doubled, so halve
-                % the number of trials per condition to maintain the same
-                % number of trials overall
-                obj.Config.NumTrialsPerCondition = obj.Config.NumTrialsPerCondition/2;
                 obj = obj.ExecuteTestPhase(obj.Config.TaskTypes);
             end
             obj.SessionEndTime = GetSecs;
@@ -121,23 +117,28 @@ classdef MOT_Session < Session
         % %%%%%%%%%%
         % Test phase
         function obj = ExecuteTestPhase(obj, taskTypes)
-            totalTrials = size(obj.Config.TestConditionTypes, 1) * obj.Config.NumTrialsPerCondition;
+            % The number of conditions is effectively doubled, so halve
+            % the number of trials per condition to maintain the same
+            % number of trials overall
+            numTrialsPerCondition = obj.Config.NumTrialsPerCondition/2;
+            
+            totalTrials = size(obj.Config.TestConditionTypes, 1) * numTrialsPerCondition;
             trialNum = 1;
             phase = 'test';
             % Display each condition blocked
             for i=1:size(obj.Config.TestConditionTypes, 2)
                 message = obj.GetInstructions(phase, obj.Config.TestConditionTypes(i), obj.Config.NumMOTTargets, obj.Config.NumMOTObjects, obj.Config.NumVWMObjects);
 
-                MOTValidProbe = [zeros(obj.Config.NumTrialsPerCondition/4,1); ones(obj.Config.NumTrialsPerCondition/4,1)];
+                MOTValidProbe = [zeros(numTrialsPerCondition/4,1); ones(numTrialsPerCondition/4,1)];
                 VWMValidProbe = MOTValidProbe;
-                task_to_respond_to_flags = [zeros(obj.Config.NumTrialsPerCondition/2,1); ones(obj.Config.NumTrialsPerCondition/2,1)];
+                task_to_respond_to_flags = [zeros(numTrialsPerCondition/2,1); ones(numTrialsPerCondition/2,1)];
                 task_to_respond_to_flags(task_to_respond_to_flags == 0) = TaskType.MOT;
                 task_to_respond_to_flags(task_to_respond_to_flags == 1) = TaskType.VWM;
                 probe_is_valid = [MOTValidProbe; VWMValidProbe];
-                flags_index = Shuffle(1:obj.Config.NumTrialsPerCondition);
+                flags_index = Shuffle(1:numTrialsPerCondition);
                 
                 obj.Win.DisplayMessageAndWaitForKey([message 'Please press ''t'' to begin.'], 't');                
-                for trial_num=1:obj.Config.NumTrialsPerCondition;
+                for trial_num=1:numTrialsPerCondition;
                     trial = MOT_Trial(obj.Config, obj.Win, taskTypes, obj.Config.InitialSpeed, QuadrantLayout.All, []);
                     trial.Condition = obj.Config.TestConditionTypes(i);
                     [pos] = trial.GeneratePositions();
@@ -149,7 +150,7 @@ classdef MOT_Session < Session
                         message = '';
                     end
                     message = [message 'Block ' num2str(i) ' of ' num2str(size(obj.Config.TestConditionTypes, 2)) '\n'...
-                               'Trial ' num2str(trial_num) ' of ' num2str(obj.Config.NumTrialsPerCondition) '\n\n'...
+                               'Trial ' num2str(trial_num) ' of ' num2str(numTrialsPerCondition) '\n\n'...
                                'Press any key to begin.\n\n'];
                     obj.Win.DisplayMessageAndWait(message);
 

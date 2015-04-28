@@ -1,6 +1,8 @@
-function StartSession(subject_name, num_blocks)
+function StartSession(subject_name, num_sessions, num_trials_per_condition)
+    clearvars -except subject_name num_blocks;
+    
     KbName('UnifyKeyNames');
-    if nargin < 1
+    if nargin < 1 || isempty(num_sessions)
         subject_name = '';
     end
     [valid, subject_name] = isValidSubjectName(subject_name);
@@ -36,37 +38,48 @@ function StartSession(subject_name, num_blocks)
   
     [calibrated_speed, calibrated_disc_count] = getCalibratedParams(data_fn);
     
-    if nargin < 2
-        num_blocks = 1;
+    if nargin < 2 || isempty(num_sessions)
+        num_sessions = 1;
     end
     session_num = 1;
     
+    if nargin < 3 || isempty(num_trials_per_condition)
+        num_trials_per_condition = 16;
+    end
+    
     try
-        win = MOTWindow();
-        %win = MockWin();
-        for i = 1:num_blocks
+        for i = 1:num_sessions
             vars = whos('-file', data_fn);
             data_file_m = matfile(data_fn);
             if ismember('session', {vars.name})
                session_num = size(data_file_m.session, 2) + 1;
             end
             
-            config{session_num} = MOT_SessionConfig(win, subject_name, session_num);
-            config{session_num}.NumVWMObjects = calibrated_disc_count;
-            config{session_num}.InitialSpeed = calibrated_speed;
+            fprintf('Ready to begin session %d with speed at %f and disc count at %d\n', ...
+                session_num, calibrated_speed, calibrated_disc_count);
+            fprintf('Press any key to begin\n');
+            GetKbChar();
+
+            win = MOTWindow();
+            %win = MockWin();
+            config = MOT_SessionConfig(win, subject_name, session_num);
+            config.NumTrialsPerCondition = num_trials_per_condition;
+            config.NumPracticeTrialsPerCondition = 8;
+            config.NumVWMObjects = calibrated_disc_count;
+            config.InitialSpeed = calibrated_speed;
             if i > 1
-                config{session_num}.doPractice = 0;
+                config.doPractice = 0;
             end
-            config{session_num}.doPractice = 0;
-            config{session_num}.Debug = 1;
-            config{session_num}.SessionFN = data_fn;
+            config.Debug = 0;
             
-            session{session_num} = MOT_Session(config{session_num}, win);
-            session{session_num} = session{session_num}.StartSession();
-            save(data_fn, '-APPEND', 'config', 'session');
+            new_sess = MOT_Session(config, win);
+            new_sess = new_sess.StartSession();
             
-            if i < num_blocks
-                win.DisplayMessageAndWait('Please press a key to continue with the next block.');
+            session{session_num} = new_sess;
+            save(data_fn, '-APPEND', 'session');
+            
+            if i < num_sessions
+                win.DisplayMessageAndWait('Please press a key to continue with the next session.');
             end
         end
         win.DisplayMessageAndWait('This session is complete.\n\nPlease inform the experimenter.\n\nThank you for your participation so far!');

@@ -2,7 +2,7 @@ classdef MOT_SessionConfig < SessionConfig
     properties (Constant = true)
         StimuliType = StimuliType.Dot;
         ExperimentName = 'MOT_VWM_2';
-        ExperimentVersion = '2.0.1';
+        ExperimentVersion = '2.1.1';
         TaskTypes = [TaskType.MOT TaskType.VWM];
         ResponseType = ResponseType.Probe;
         TargetCueColour = [255 0 0]';
@@ -18,9 +18,9 @@ classdef MOT_SessionConfig < SessionConfig
         PracticeConditionTypes = [Condition.PerformMOT Condition.PerformVWM Condition.PerformBoth];
         
         NumTestBlocks = 1; 
-        NumTrialsPerCondition = 8; %20
+        NumTrialsPerCondition = 16; %16
         NumTrialsPerTestBlock;
-        NumPracticeTrialsPerCondition = 4; %8
+        NumPracticeTrialsPerCondition = 8; %8
         InterQuadrantPadding;
         QuadrantWidthInDegrees = 15.3;
         QuadrantHeightInDegrees = 11.5;
