@@ -4,35 +4,40 @@ function est_discs = VWM_MCS(subject_name, num_trials, disc_range, speed)
 %   num_trials:   The number of trials on which the participant will be tested.
 %   disc_range:   The range of number of discs that will be displayed.
 
-    if nargin < 1
-        subject_name = '';
+    st = dbstack(1);
+    if strcmp(st(1).name, 'StartMOTMCS') ~= true
+        if nargin < 1
+            subject_name = '';
+        end
+        [valid, subject_name] = isValidSubjectName(subject_name);
+        if ~valid
+            return
+        end
+        if mod(num_trials, size(disc_range, 2)) ~= 0
+           error('disc_range must be able to evenly span num_trials'); 
+        end
+        fprintf('Participant: %s\n', subject_name);
     end
-    [valid, subject_name] = isValidSubjectName(subject_name);
-    if ~valid
-        return
-    end
-    if mod(num_trials, size(disc_range, 2)) ~= 0
-       error('disc_range must be able to evenly span num_trials'); 
-    end
-    fprintf('Participant: %s\n', subject_name);
     data_fn = ['data' filesep subject_name '.mat'];
     if exist(data_fn, 'file') && ~exist('vwm_mcs_data', 'var')
         load(data_fn);
-        fprintf('Data and config loaded from %s\n', data_fn);
     end
     
-    [data, config] = VWM_MCS_trials(subject_name, num_trials, disc_range, speed);
-    % Comment out the line above and uncomment the test lines below to
-    % simulate trials with approximate performance for each disc count as
-    % specified in the line immediately below.
-%     if size(disc_range, 2) == 5 % test
-%         p = [0.99 0.85 0.75 0.25 0.05]; % test
-%     else % test
-%         p = [0.35 0.25 0.05]; % test
-%     end % test
-%     data.correct = gen_binornd_correct(p, num_trials); % test
-%     data.num_discs = sort(repmat(disc_range, 1, num_trials/size(disc_range, 2))); % test
-%     config.ResultsFN = []; % test
+    % Set sim = 1 to simulate trials with approximate performance for each disc
+    % count as specified below.
+    sim = 1;
+    if sim == 1
+        if size(disc_range, 2) == 5 % test
+            p = [0.99 0.85 0.75 0.25 0.05]; % test
+        else % test
+            p = [0.85 0.65 0.25]; % test
+        end % test
+        data.correct = gen_binornd_correct(p, num_trials); % test
+        data.num_discs = sort(repmat(disc_range, 1, num_trials/size(disc_range, 2))); % test
+        config.ResultsFN = []; % test
+    else
+        [data, config] = VWM_MCS_trials(subject_name, num_trials, disc_range, speed);
+    end
     
     if exist('vwm_mcs_data', 'var')
         attempt_num = size(vwm_mcs_data, 2) + 1;

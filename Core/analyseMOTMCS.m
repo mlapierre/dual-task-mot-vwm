@@ -2,7 +2,6 @@ function [speed q] = analyseMOTMCS(subject_name, attempt_num)
     data_fn = ['data' filesep subject_name '.mat'];
     if exist(data_fn, 'file') && ~exist('mot_mcs_data', 'var')
         load(data_fn);
-        fprintf('Data and loaded from %s\n', data_fn);
     end
     
     s = [];

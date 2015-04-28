@@ -1,32 +1,41 @@
 function StartMOTMCS(subject_name)
     KbName('UnifyKeyNames');
-    if nargin < 1
-        subject_name = '';
+    
+    st = dbstack(1);
+    if strcmp(st(1).name, 'StartSession') ~= true
+        if nargin < 1
+            subject_name = '';
+        end
+        [valid, subject_name] = isValidSubjectName(subject_name);
+        if ~valid
+            return
+        end
+        fprintf('Participant: %s\n', subject_name);
+
+        data_fn = ['data' filesep subject_name '.mat'];
+        if exist(data_fn, 'file')
+            fprintf('Data and config loaded from %s\n', data_fn);
+        else
+            fprintf('%s has not participated in this experiment before\n', subject_name);
+            fprintf('Saving data and config to: %s\n', data_fn);
+        end
+        
+        if exist('mot_mcs_data', 'var')
+            nAttempts = size(mot_mcs_data, 2);
+            if isfield(mot_mcs_data{nAttempts}, 'speedFinal')
+                fprintf('MOT calibration has been completed\n');
+                return
+            end
+        end
+        fprintf('\nMOT calibration has not been completed\n');
     end
-    [valid, subject_name] = isValidSubjectName(subject_name);
-    if ~valid
-        return
-    end
-    fprintf('Participant: %s\n', subject_name);
     
     data_fn = ['data' filesep subject_name '.mat'];
     if exist(data_fn, 'file')
         load(data_fn);
-        fprintf('Data and config loaded from %s\n', data_fn);
-    else
-        fprintf('%s has not participated in this experiment before\n', subject_name);
-        fprintf('Saving data and config to: %s\n', data_fn);
-    end
-    if exist('mot_mcs_data', 'var')
-        nAttempts = size(mot_mcs_data, 2);
-        if isfield(mot_mcs_data{nAttempts}, 'speedFinal')
-            fprintf('MOT calibration has been completed\n');
-            return
-        end
     end
     
     ListenChar(2);
-    fprintf('\nMOT calibration has not been completed\n');
     fprintf('Please press a key to begin the first stage...\n');
     GetKbChar();
     speed = MOT_MCS(subject_name, 50, 10, 2);

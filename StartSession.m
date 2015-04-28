@@ -17,35 +17,24 @@ function StartSession(subject_name, session_config, num_blocks, data_set)
         fprintf('%s has not participated in this experiment before\n', subject_name);
         fprintf('Saving data and config to: %s\n', data_fn);
     end
-    
-    if exist('config_mot_mcs', 'var')
-        fprintf('MOT calibration has been completed\n');
-    else
-        fprintf('\nMOT calibration has not been completed\n');
-        fprintf('Please press a key to begin the first stage...\n');
-        GetKbChar();
-        [ mot_mcs1_data, mot_mcs1_config ] = MOT_MCS(subject_name, 50, 10, 2);
-        fprintf('Estimating threshold...\n');
-        [speed mot_mcs1_data.q1] = CalcThreshold([mot_mcs1_data.speed], [mot_mcs1_data.correct], 0.75, .5);
-        save(data_fn, 'mot_mcs1_data', 'mot_mcs1_config');
-        if exist(mot_mcs1_config.ResultsFN, 'file')
-            delete(mot_mcs1_config.ResultsFN);
-        end
-        
-        fprintf('Please press a key to begin the second stage...\n');
-        GetKbChar();
-        [ mot_mcs2_data, mot_mcs2_config ] = MOT_MCS(subject_name, 50, speed, 1);
-        fprintf('Estimating final threshold...\n');
-        [speed mot_mcs1_data.q2] = CalcThreshold([mot_mcs1_data.speed mot_mcs2_data.speed],...
-                                                 [mot_mcs1_data.correct mot_mcs2_data.correct], 0.7, .5);
-        save(data_fn, 'mot_mcs2_data', 'mot_mcs2_config', '-append');
-        if exist(mot_mcs1_config.ResultsFN, 'file')
-            delete(mot_mcs1_config.ResultsFN);
-        end
 
-        return 
+    if ~isCalibrationComplete(data_fn, 'MOT')
+        fprintf('\nMOT calibration has not been completed\n');
+        StartMOTMCS(subject_name);
+        load(data_fn);
+    else
+        fprintf('MOT calibration has been completed\n');
     end
     
+    if ~isCalibrationComplete(data_fn, 'VWM')
+        fprintf('\nVWM calibration has not been completed\n');
+        StartVWMMCS(subject_name);
+        load(data_fn);
+    else
+        fprintf('VWM calibration has been completed\n');
+    end
+  
+    [calibrated_speed, calibrated_disc_count] = getCalibratedParams(data_fn);
     return
     
     try
