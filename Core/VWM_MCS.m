@@ -25,7 +25,7 @@ function est_discs = VWM_MCS(subject_name, num_trials, disc_range, speed)
     
     % Set sim = 1 to simulate trials with approximate performance for each disc
     % count as specified below.
-    sim = 1;
+    sim = 0;
     if sim == 1
         if size(disc_range, 2) == 5 % test
             p = [0.99 0.85 0.75 0.25 0.05]; % test
