@@ -1,4 +1,4 @@
-function StartSession(subject_name, session_config, num_blocks, data_set)
+function StartSession(subject_name, num_blocks)
     KbName('UnifyKeyNames');
     if nargin < 1
         subject_name = '';
@@ -35,42 +35,35 @@ function StartSession(subject_name, session_config, num_blocks, data_set)
     end
   
     [calibrated_speed, calibrated_disc_count] = getCalibratedParams(data_fn);
-    return
+    
+    if nargin < 2
+        num_blocks = 1;
+    end
+    session_num = 1;
     
     try
         win = MOTWindow();
+        %win = MockWin();
         for i = 1:num_blocks
-            if exist(data_log_fn, 'file')
-                data_log_fid = fopen(data_log_fn, 'r');
-                if data_log_fid ~= -1
-                    [~, count] = fscanf(data_log_fid, '%s');
-                    if count >= session_config.session_num
-                        session_config.session_num = count + 1;
-                    end
-                else
-                    error('Unable to open data log file %s',data_log_fn);
-                end
-                fclose(data_log_fid);
+            vars = whos('-file', data_fn);
+            data_file_m = matfile(data_fn);
+            if ismember('session', {vars.name})
+               session_num = size(data_file_m.session, 2) + 1;
             end
             
-            startTime = GetSecs;
-            config = Initialise_Session(MOT_SessionConfig(win, [subjectName '_' num2str(data_set)], session_config.session_num), session_config);
+            config{session_num} = MOT_SessionConfig(win, subject_name, session_num);
+            config{session_num}.NumVWMObjects = calibrated_disc_count;
+            config{session_num}.InitialSpeed = calibrated_speed;
             if i > 1
-                config.doPractice = 0;
+                config{session_num}.doPractice = 0;
             end
-            sess = MOT_Session(config, win);
-            sess.StartSession();
-            endTime = GetSecs;
-            save(config.SessionFN, '-APPEND', 'startTime', 'endTime');
+            config{session_num}.doPractice = 0;
+            config{session_num}.Debug = 1;
+            config{session_num}.SessionFN = data_fn;
             
-            % Save data filename to participant's data log
-            data_log_fid = fopen(data_log_fn, 'a+');
-            if data_log_fid ~= -1
-                fprintf(data_log_fid, '%s\n', strrep(config.SessionFN, 'Data/', ''));
-            else
-                error('Unable to open data log file %s',data_log_fn);
-            end
-            fclose(data_log_fid);
+            session{session_num} = MOT_Session(config{session_num}, win);
+            session{session_num} = session{session_num}.StartSession();
+            save(data_fn, '-APPEND', 'config', 'session');
             
             if i < num_blocks
                 win.DisplayMessageAndWait('Please press a key to continue with the next block.');
@@ -82,24 +75,4 @@ function StartSession(subject_name, session_config, num_blocks, data_set)
         delete(win);
         ple
     end
-end
-
-function config = Initialise_Session(config, session_config)
-    config.Debug = session_config.debug;
-    config.InitialSpeed = session_config.InitialSpeed;
-    config.doPractice = session_config.doPractice;
-    config.doTest = session_config.doTest;
-    config.DotWidthScaleFactor = session_config.DotWidthScaleFactor;
-    config.MinSepScaleFactor = session_config.MinSepScaleFactor;
-    config.DotWidth = round(session_config.DotWidthScaleFactor/config.DegPerPixel);
-    config.MinSep = round(session_config.MinSepScaleFactor/config.DegPerPixel); 
-    config.InterQuadrantPadding = config.DotWidth/2;
-    config.NumTrialsPerCondition = session_config.NumTrialsPerCondition;
-    config.NumPracticeTrialsPerCondition = session_config.NumPracticeTrialsPerCondition;
-    config.TestConditionTypes = session_config.TestConditionTypes;
-    config.NumVWMObjects = session_config.NumVWMObjects;
-    config.NumMOTObjects = session_config.NumMOTObjects;
-    config.NumMOTTargets = session_config.NumMOTTargets;
-    config.VWMObjectColours = session_config.VWMObjectColours;
-    config.VWMObjectDisplayTime = session_config.VWMObjectDisplayTime;
 end

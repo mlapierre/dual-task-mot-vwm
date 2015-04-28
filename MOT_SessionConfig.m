@@ -13,13 +13,14 @@ classdef MOT_SessionConfig < SessionConfig
     end
     
     properties
+        % 'Both' is included twice because once is for MOT performance and once for VWM performance
         TestConditionTypes = [Condition.PerformMOT Condition.PerformVWM Condition.PerformBoth Condition.PerformBoth];
         PracticeConditionTypes = [Condition.PerformMOT Condition.PerformVWM Condition.PerformBoth];
         
         NumTestBlocks = 1; 
-        NumTrialsPerCondition = 20;
+        NumTrialsPerCondition = 8; %20
         NumTrialsPerTestBlock;
-        NumPracticeTrialsPerCondition = 10;
+        NumPracticeTrialsPerCondition = 4; %8
         InterQuadrantPadding;
         QuadrantWidthInDegrees = 15.3;
         QuadrantHeightInDegrees = 11.5;

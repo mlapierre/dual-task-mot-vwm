@@ -23,9 +23,13 @@ classdef MOT_Session < Session
             if obj.Config.doTest
                 disp('Begin test phase');
                 disp(obj.Config.SessionNum);
+                % Mirror and rotate condition order
                 obj.Config.TestConditionTypes = circshift(obj.Config.TestConditionTypes, [0 obj.Config.SessionNum-1]);
                 obj.Config.TestConditionTypes = [obj.Config.TestConditionTypes fliplr(obj.Config.TestConditionTypes)];
                 disp(obj.Config.TestConditionTypes);
+                % The number of conditions is effectively doubled, so halve
+                % the number of trials per condition to maintain the same
+                % number of trials overall
                 obj.Config.NumTrialsPerCondition = obj.Config.NumTrialsPerCondition/2;
                 obj = obj.ExecuteTestPhase(obj.Config.TaskTypes);
             end
@@ -101,7 +105,7 @@ classdef MOT_Session < Session
                     obj.PracticeResults(i, trial_num).ValidProbe = probe_is_valid(flags_index(trial_num));
                     obj.PracticeResults(i, trial_num).TaskType = task_to_respond_to_flags(flags_index(trial_num));
                     obj.PracticeResults(i, trial_num).MissedFrames = missedFrames;
-                    obj.PracticeResults(i, trial_num).Positions = pos;
+                    %obj.PracticeResults(i, trial_num).Positions = pos;
                     obj.PracticeResults(i, trial_num).Speed = obj.Config.InitialSpeed-1;
 
                     obj.SaveResults(obj.PracticeResults);
@@ -173,7 +177,7 @@ classdef MOT_Session < Session
                     obj.TestResults(i, trial_num).ValidProbe = probe_is_valid(flags_index(trial_num));
                     obj.TestResults(i, trial_num).TaskType = task_to_respond_to_flags(flags_index(trial_num));
                     obj.TestResults(i, trial_num).MissedFrames = missedFrames;
-                    obj.TestResults(i, trial_num).Positions = pos;
+                    %obj.TestResults(i, trial_num).Positions = pos;
                     obj.TestResults(i, trial_num).Speed = obj.Config.InitialSpeed;
 
                     obj.SaveResults(obj.TestResults);

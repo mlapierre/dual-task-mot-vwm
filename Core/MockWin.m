@@ -92,6 +92,9 @@ classdef MockWin
         function DisplayMessageAndWait(obj, message, colour, wrapat)
             %disp(message);
         end
+        
+        function DisplayMessageAndWaitForKey(obj, message, key, colour, wrapat)
+        end
             
         function textures = MakeTexturesFromFiles(obj, path, filenames)
             for i = 1:length(filenames)
