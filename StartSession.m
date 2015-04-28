@@ -1,8 +1,10 @@
 function StartSession(subject_name, num_sessions, num_trials_per_condition)
-    clearvars -except subject_name num_blocks;
+    clearvars -except subject_name num_sessions num_trials_per_condition;
+
+    view_params = [38.5 60]; % screen width and viewing distance
     
     KbName('UnifyKeyNames');
-    if nargin < 1 || isempty(num_sessions)
+    if nargin < 1 || isempty(subject_name)
         subject_name = '';
     end
     [valid, subject_name] = isValidSubjectName(subject_name);
@@ -62,7 +64,7 @@ function StartSession(subject_name, num_sessions, num_trials_per_condition)
 
             win = MOTWindow();
             %win = MockWin();
-            config = MOT_SessionConfig(win, subject_name, session_num);
+            config = MOT_SessionConfig(win, subject_name, session_num, view_params);
             config.NumTrialsPerCondition = num_trials_per_condition;
             config.NumPracticeTrialsPerCondition = 8;
             config.NumVWMObjects = calibrated_disc_count;

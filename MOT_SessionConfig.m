@@ -43,11 +43,15 @@ classdef MOT_SessionConfig < SessionConfig
     end % properties
 
     methods
-        function obj = MOT_SessionConfig(window, subjectName, num)
+        function obj = MOT_SessionConfig(window, subjectName, num, viewParams)
             super_args{1} = window;
             if nargin >= 2
                 super_args{2} = subjectName;
                 super_args{3} = num;
+            end
+            
+            if nargin >= 4
+                super_args{7} = viewParams;
             end
             
             obj = obj@SessionConfig(super_args{:});

@@ -5,8 +5,6 @@ classdef SessionConfig
         CueTime = 2;
         CueFreq = 0.33;
         InterQuadrantPaddingColour = [62 62 62];
-        ScreenWidth = 52;%38.5; %52 / 38.5
-        ViewingDistance = 68; %68 / 60
     end
     
     properties (Abstract, Constant)
@@ -15,6 +13,8 @@ classdef SessionConfig
     end
     
     properties
+        ScreenWidth = 52;%38.5; %52 / 38.5
+        ViewingDistance = 68; %68 / 60
         Debug;
         InitialSpeed = 5;
         doPractice = 1;
@@ -59,7 +59,7 @@ classdef SessionConfig
     end % properties
 
     methods
-        function obj = SessionConfig(window, subjectName, num, debug, sessionFN, trialDataFN)
+        function obj = SessionConfig(window, subjectName, num, debug, sessionFN, trialDataFN, viewParams)
             if nargin < 2
                 subjectName = 'test';
             end
@@ -87,6 +87,12 @@ classdef SessionConfig
             obj.SessionFN = sessionFN;
             obj.SavedTrialsFN = trialDataFN;
             obj.ResultsFN = resFN;
+            
+            if nargin < 7 || isempty(sessionFN)
+                viewParams = [38.5 60];
+            end
+            obj.ScreenWidth = viewParams(1);
+            obj.ViewingDistance = viewParams(2);
                 
             obj.Window = window;
             obj.SubjectID = subjectName;

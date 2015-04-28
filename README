@@ -5,6 +5,10 @@ Instructions
 
 These instructions assume an understanding of the design of the experiment.
 
+Before starting the experiment be sure to update view_params in StartSession.m
+to reflect the screen width and viewing distance of the computer used for the
+session.
+
 Use StartSession to begin each session of the experiment:
 
     StartSession(subject_name, session_num, num_trials_per_condition)
