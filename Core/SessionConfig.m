@@ -64,13 +64,8 @@ classdef SessionConfig
                 subjectName = 'test';
             end
             
-            if ispc()
-                slash = '\';
-            elseif ismac()
-                slash = '/';    
-            end
-            obj.BackupFolder = [obj.BackupFolder slash];
-            obj.DataFolder = [obj.DataFolder slash];
+            obj.BackupFolder = [obj.BackupFolder filesep];
+            obj.DataFolder = [obj.DataFolder filesep];
             
             if nargin < 3
                 num = 1;
@@ -93,15 +88,6 @@ classdef SessionConfig
             obj.SavedTrialsFN = trialDataFN;
             obj.ResultsFN = resFN;
                 
-            while exist(obj.SessionFN, 'file')
-                obj.SessionNum = obj.SessionNum + 1;
-                obj.SessionFN = [obj.DataFolder subjectName '_' date '_' obj.ExperimentName '_' obj.ExperimentVersion '_Session_' num2str(obj.SessionNum) '.mat'];
-                obj.ResultsFN = [obj.DataFolder subjectName '_' date '_' obj.ExperimentName '_' obj.ExperimentVersion '_Session_' num2str(obj.SessionNum) '_Results.mat'];
-                if obj.SessionNum > 50
-                    error('too many sessions');
-                end
-            end
-
             obj.Window = window;
             obj.SubjectID = subjectName;
             obj.InterFrameInterval = window.InterFrameInterval;
