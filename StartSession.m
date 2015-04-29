@@ -80,6 +80,12 @@ function StartSession(subject_name, num_sessions, num_trials_per_condition)
             session{session_num} = new_sess;
             save(data_fn, '-APPEND', 'session');
             
+            if ~exist('results', 'var')
+                results = table();
+            end
+            results = [results; tidySessionData(new_sess.TestResults, session_num)];
+            save(data_fn, '-append', 'results');
+
             if i < num_sessions
                 win.DisplayMessageAndWait('Please press a key to continue with the next session.');
             end

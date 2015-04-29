@@ -180,6 +180,7 @@ classdef MOT_Session < Session
                     obj.TestResults(i, trial_num).MissedFrames = missedFrames;
                     %obj.TestResults(i, trial_num).Positions = pos;
                     obj.TestResults(i, trial_num).Speed = obj.Config.InitialSpeed;
+                    obj.TestResults(i, trial_num).NumVWMObjects = obj.Config.NumVWMObjects;
 
                     obj.SaveResults(obj.TestResults);
                     % Retain the Window object to enable testing automation
