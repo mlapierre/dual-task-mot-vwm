@@ -26,7 +26,7 @@ function est_speed = MOT_MCS(subject_name, num_trials, base_speed, speed_inc)
     
     % Set sim = 1 to simulate trials with approximate performance for each 
     % speed as specified below.
-    sim = 0;
+    sim = 1;
     if sim == 1
         data.correct = gen_binornd_correct([0.99 0.85 0.75 0.25 0.05], num_trials); % test
         data.speed = sort(repmat(base_speed + (-2*speed_inc:speed_inc:2*speed_inc), 1, num_trials/5)); % test
