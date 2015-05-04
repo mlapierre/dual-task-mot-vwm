@@ -67,3 +67,19 @@ E.g.,
 
 This will test participant mark_l on 60 trials with 4, 5, or 6 discs (with MOT discs moving at a speed of 10). The number of trials is set to 60 because the number of discs must be able to be evenly distributed over the 60 trials (i.e., 20 trials of each disc count). It will then display the estimated 75% threshold speed and a graph of performance for disc count. Note that the disc count should not be set to less than 3. See VWM_MCS.m for more details.
 
+## Data Analysis
+================
+
+Use `analyse` to analyse the data for a participant. E.g:
+
+    analyse('mark_l')
+
+This will display a graph of the performance for each condition for all sessions. Error bars represent 95% confidence intervals.
+
+You can view the results for a subset of sessions, e.g., if you need to see the performance for a single session:
+
+    analyse('mark_l', 4)
+
+Or for a range of sessions:
+
+    analyse('mark_l', 1:7)    
