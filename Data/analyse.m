@@ -1,4 +1,7 @@
-function analyse(subject_name)
+function analyse(subject_name, sessions)
+    if nargin < 2
+        sessions = [];
+    end
     data_fn = ['data' filesep subject_name '.mat'];
     if ~exist(data_fn, 'file')
         error('Could not find %s\n', data_fn);
@@ -11,8 +14,17 @@ function analyse(subject_name)
                   strcmp(results.condition, 'VWM')==1, ...
                   strcmp(results.condition, 'Both')==1 & strcmp(results.response_type, 'VWM')==1];              
     for i = 1:4
-        %t = results(results.session==1 & conditions(:, i), {'correct'});
-        t = results(conditions(:, i), {'correct'});
+        if isempty(sessions)
+            t = results(conditions(:, i), {'correct'});
+        else
+            idx = zeros(size(results.session));
+            for j = sessions
+                idx = idx | results.session==j & conditions(:, i);
+            end
+            t = results(idx, {'correct'});
+        end
+        size(t)
+        
         avg(i) = mean(t{:,:});
         [ci(i,1) ci(i,2)] = calcCI(avg(i), size(t, 1));
     end
