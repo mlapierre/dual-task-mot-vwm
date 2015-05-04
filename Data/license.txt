@@ -1,3 +1,5 @@
+applyhatch_pluscolor
+
 Copyright (c) 2011, Brandon Levey 
 All rights reserved.
 
