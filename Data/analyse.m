@@ -21,11 +21,26 @@ function [results, stats, subject_names] = analyse(subject_name, sessions)
             && ismember('response_type', results{i}.Properties.VariableNames) ...
             && ismember('correct', results{i}.Properties.VariableNames)
             stats(i) = calcStats(results{i}, sessions);
-            graph_session(stats(i), subject_names{i});
+            %graph_session(stats(i), subject_names{i});
         else
             fprintf('%s results table does not contain valid session information. Skipped.\n', subject_names{i});
             stats(i) = struct('t',[], 'sample_size', [], 'avg', [], 'ci', []);
         end
+    end
+    
+    if size(subject_names, 2) > 1
+        % Remove empty results sets
+        graph_stats = stats;
+        idx = arrayfun(@(x)(isempty(x.avg)), stats);
+        graph_stats(idx) = [];
+        graph_subject_names = subject_names;
+        graph_subject_names(idx) = [];
+
+        graph_stats(size(graph_stats, 2) + 1) = calcGroupStats(graph_stats);
+        graph_subject_names{size(graph_subject_names, 2) + 1} = 'Group';
+        graph_all(graph_stats, graph_subject_names);
+    else
+        graph_session(stats(1), subject_names{1});
     end
 end
 
@@ -42,6 +57,25 @@ function subject_names = getSubjectNames()
             fprintf('%s does not contain results. Skipped\n', data_fn);
         end
     end
+end
+
+function stats = calcGroupStats(graph_stats)
+    nC = size(graph_stats(1).avg, 2);
+    m = reshape([graph_stats.avg], nC, size(graph_stats, 2));
+    n = size(m, 2);
+    
+    % Calculate 95% confidence interval as per:
+    % Morey, R. D. (2008). Confidence Intervals from Normalized Data: A correction to Cousineau (2005).
+    %   Tutorials in Quantitative Methods for Psychology, 4, 61-64. 
+    m(:, n + 1) = mean(m, 2);
+    norm = (m(:, 1:n) - repmat(mean(m(:,1:n)), nC, 1)) + mean(mean(m(:, 1:n)));
+    v = sqrt(std(norm,0,2));
+    sd = v.^2 *(nC/(nC-1));
+    sem = sd/sqrt(n);
+    stats.t = [];
+    stats.sample_size = n;
+    stats.avg = m(:, n + 1)';
+    stats.ci = [m(:, n + 1)-sem*1.96 m(:, n + 1)+sem*1.96];
 end
 
 function stats = calcStats(results, sessions)
@@ -87,6 +121,39 @@ function [u, l] = calcCI(p, n)
     l = 1/(1 + z^2/n) * (p + z^2/(2*n) - z * sqrt(p*(1-p)/n + z^2/(4*n^2)));
 end
 
+function graph_all(stats, subject_names)
+    nC = size(stats(1).avg, 2);
+    x = repmat(1:size(subject_names, 2), nC,1);
+    m = reshape([stats.avg], nC, size(stats, 2));
+    ci = reshape([stats.ci], size(x, 1), 2, size(x, 2));
+    err(:, :, 1) = reshape(ci(:,1,:), size(x, 1), size(x, 2), 1) - m;
+    err(:, :, 2) = m - reshape(ci(:,2,:), size(x, 1), size(x, 2), 1);
+    
+    % Draw bars
+    figure('Color','white');
+    bar(x', m');
+    box off;
+    hold all;
+    
+    hL = legend(gca,{'MOT-Only','MOT-Dual', 'VWM-Only','VWM-Dual'}, 'Location', 'NorthEast');     
+    set(hL, 'position', [0.77 0.8 0.1 0.1]);
+    xlabel('Observers');
+    ylabel('Mean accuracy (proportion correct)');
+    set(gca,'XTickLabel', subject_names);
+    set(gca,'YLim', [0 1]);
+    
+    % Draw error bars & set bar colours
+    colours = [1 0 0; 0 1 0; 0 0 1; 1 1 0; 0 0 0];
+    pos = [-0.275 -0.086 0.086 0.275];
+    ch = get(gca, 'Children');
+    for i = 1:nC
+        h = errorbar(gca, x(i,:)+pos(i), m(i,:), err(i,:,1), err(i,:,2));
+        set(h,'linestyle','none');
+        set(h, 'Color', colours(5,:));
+        set(ch(2), 'FaceColor', colours(i,:));
+    end
+end
+
 function graph_session(stats, subject_name)
     m = stats.avg;
     ci = stats.ci;
@@ -104,16 +171,9 @@ function graph_session(stats, subject_name)
     xlabel(['Observer ' subject_name]);
     ylabel('Mean accuracy (proportion correct)');
     set(gca,'XTickLabel', {'MOT-Only','MOT-Dual', 'VWM-Only','VWM-Dual'});
-    h = errorbar(gca,x(:,1),y(:,1), err(1,2), err(1,1));
-    set(h,'linestyle','none');
-    set(h, 'Color', 'b');
-    h = errorbar(gca,x(:,2),y(:,2), err(2,2), err(2,1));
-    set(h,'linestyle','none');
-    set(h, 'Color', 'b');
-    h = errorbar(gca,x(:,3),y(:,3), err(3,2), err(3,1));
-    set(h,'linestyle','none');
-    set(h, 'Color', 'b');
-    h = errorbar(gca,x(:,4),y(:,4), err(4,2), err(4,1));
-    set(h,'linestyle','none');
-    set(h, 'Color', 'b');
+    for i = 1:4
+        h = errorbar(gca, x(:,i), y(:,i), err(i,2), err(i,1));
+        set(h,'linestyle','none');
+        set(h, 'Color', 'b');
+    end
 end
