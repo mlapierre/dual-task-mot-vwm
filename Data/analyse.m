@@ -1,14 +1,50 @@
-function analyse(subject_name, sessions)
+function [results, stats, subject_names] = analyse(subject_name, sessions)
+    if nargin < 1
+        subject_name = [];
+    end
     if nargin < 2
         sessions = [];
     end
-    data_fn = ['data' filesep subject_name '.mat'];
-    if ~exist(data_fn, 'file')
-        error('Could not find %s\n', data_fn);
+    if isempty(subject_name)
+        subject_names = getSubjectNames();
+    elseif ~iscellstr(subject_name) && isempty(regexp(subject_name, '[\W]+', 'start')) 
+        subject_names{1} = subject_name;
+    else
+        error('Invalid subject_name: %s\n', subject_name);
     end
-    load(data_fn, 'results');
-    fprintf('Data loaded from %s\n', data_fn);
+    results = {};
+    
+    for i = 1:size(subject_names, 2)
+        results{i} = getResults(subject_names{i});
+        if     ismember('session', results{i}.Properties.VariableNames) ...
+            && ismember('condition', results{i}.Properties.VariableNames) ...
+            && ismember('response_type', results{i}.Properties.VariableNames) ...
+            && ismember('correct', results{i}.Properties.VariableNames)
+            stats(i) = calcStats(results{i}, sessions);
+            graph_session(stats(i), subject_names{i});
+        else
+            fprintf('%s results table does not contain valid session information. Skipped.\n', subject_names{i});
+            stats(i) = struct('t',[], 'sample_size', [], 'avg', [], 'ci', []);
+        end
+    end
+end
 
+function subject_names = getSubjectNames()
+    subject_names = {};
+    d = dir(['data' filesep '*.mat']);
+    for i = 1:size(d, 1)
+        data_fn = ['data' filesep d(i).name];
+        vars = whos('-file', data_fn);
+        if ismember('results', {vars.name})
+            [~, name, ~] = fileparts(data_fn);
+            subject_names{size(subject_names, 2)+1} = name;
+        else
+            fprintf('%s does not contain results. Skipped\n', data_fn);
+        end
+    end
+end
+
+function stats = calcStats(results, sessions)
     conditions = [strcmp(results.condition, 'MOT')==1, ...
                   strcmp(results.condition, 'Both')==1 & strcmp(results.response_type, 'MOT')==1, ...
                   strcmp(results.condition, 'VWM')==1, ...
@@ -23,12 +59,20 @@ function analyse(subject_name, sessions)
             end
             t = results(idx, {'correct'});
         end
-        size(t)
-        
-        avg(i) = mean(t{:,:});
-        [ci(i,1) ci(i,2)] = calcCI(avg(i), size(t, 1));
+        stats.t{i} = t;
+        stats.sample_size(i) = size(t, 1);
+        stats.avg(i) = mean(t{:,:});
+        [stats.ci(i,1) stats.ci(i,2)] = calcCI(stats.avg(i), stats.sample_size(i));
     end
-    graph_session(avg, ci, subject_name);
+end
+
+function results = getResults(subject_name)
+    data_fn = ['data' filesep subject_name '.mat'];
+    if ~exist(data_fn, 'file')
+        error('Could not find %s\n', data_fn);
+    end
+    load(data_fn, 'results');
+    fprintf('Data loaded from %s\n', data_fn);
 end
 
 function [u, l] = calcCI(p, n)
@@ -43,7 +87,9 @@ function [u, l] = calcCI(p, n)
     l = 1/(1 + z^2/n) * (p + z^2/(2*n) - z * sqrt(p*(1-p)/n + z^2/(4*n^2)));
 end
 
-function graph_session(m, ci, subject_name)
+function graph_session(stats, subject_name)
+    m = stats.avg;
+    ci = stats.ci;
     figure('Color','white');
     x = 1:4;
     y = m;
