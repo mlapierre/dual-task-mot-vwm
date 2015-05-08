@@ -74,7 +74,7 @@ Use `analyse` to analyse the data for a participant. E.g:
 
     analyse('mark_l')
 
-This will display a graph of the performance for each condition for all sessions. Error bars represent 95% confidence intervals.
+This will display a graph of the performance for each condition for all sessions. Error bars represent 95% confidence intervals. It will also output the results of inferential tests.
 
 You can view the results for a subset of sessions, e.g., if you need to see the performance for a single session:
 
@@ -82,4 +82,12 @@ You can view the results for a subset of sessions, e.g., if you need to see the 
 
 Or for a range of sessions:
 
-    analyse('mark_l', 1:7)    
+    analyse('mark_l', 1:7)
+
+To view the results for all participants in a single graph, leave out the participant name:
+
+    analyse()
+
+To graph a subset of sessions for all participants, enter an empty array instead of the subject name and then specify the sessions:
+
+    analyse([], 1:5)

@@ -21,10 +21,9 @@ function [results, stats, subject_names] = analyse(subject_name, sessions)
             && ismember('response_type', results{i}.Properties.VariableNames) ...
             && ismember('correct', results{i}.Properties.VariableNames)
             stats(i) = calcStats(results{i}, sessions);
-            %graph_session(stats(i), subject_names{i});
         else
             fprintf('%s results table does not contain valid session information. Skipped.\n', subject_names{i});
-            stats(i) = struct('t',[], 'sample_size', [], 'avg', [], 'ci', []);
+            stats(i) = struct('correct',[], 'sample_size', [], 'avg', [], 'ci', []);
         end
     end
     
@@ -38,7 +37,26 @@ function [results, stats, subject_names] = analyse(subject_name, sessions)
 
         graph_stats(size(graph_stats, 2) + 1) = calcGroupStats(graph_stats);
         graph_subject_names{size(graph_subject_names, 2) + 1} = 'Group';
-        graph_all(graph_stats, graph_subject_names);
+        %graph_all(graph_stats, graph_subject_names);
+        
+        fprintf('\nTwo-way ANOVA Task (MOT / VWM) by Load (Single / Dual)\n');
+        nC = size(graph_stats(1).avg, 2);
+        n = size(graph_stats, 2) - 1;
+        x = repmat(1:size(graph_subject_names, 2), nC, 1);
+        m = reshape([graph_stats.avg], nC, size(graph_stats, 2));
+        ci = reshape([graph_stats.ci], size(x, 1), 2, size(x, 2));
+        X = [m(1,1:n) m(3,1:n); m(2,1:n) m(4,1:n)]';
+        [p,anovatab,anova_stats] = anova2(X, n, 'off');
+        anovatab{2,1} = 'Single / Dual';
+        anovatab{3,1} = 'MOT / VWM';
+        anovatab
+        
+        fprintf('Group data, MOT, Single vs. Dual');
+        [~,p,~,anova_stats] = ttest(m(1,1:n),m(2,1:n))
+        fprintf('Group data, VWM, Single vs. Dual');
+        [~,p,~,anova_stats] = ttest(m(3,1:n),m(4,1:n))
+        
+        
     else
         graph_session(stats(1), subject_names{1});
     end
@@ -72,7 +90,7 @@ function stats = calcGroupStats(graph_stats)
     v = sqrt(std(norm,0,2));
     sd = v.^2 *(nC/(nC-1));
     sem = sd/sqrt(n);
-    stats.t = [];
+    stats.correct = [];
     stats.sample_size = n;
     stats.avg = m(:, n + 1)';
     stats.ci = [m(:, n + 1)-sem*1.96 m(:, n + 1)+sem*1.96];
@@ -85,19 +103,86 @@ function stats = calcStats(results, sessions)
                   strcmp(results.condition, 'Both')==1 & strcmp(results.response_type, 'VWM')==1];              
     for i = 1:4
         if isempty(sessions)
-            t = results(conditions(:, i), {'correct'});
+            correct = results(conditions(:, i), {'correct'});
         else
             idx = zeros(size(results.session));
             for j = sessions
                 idx = idx | results.session==j & conditions(:, i);
             end
-            t = results(idx, {'correct'});
+            correct = results(idx, {'correct'});
         end
-        stats.t{i} = t;
-        stats.sample_size(i) = size(t, 1);
-        stats.avg(i) = mean(t{:,:});
+        stats.correct{i} = correct;
+        stats.sample_size(i) = size(correct, 1);
+        stats.avg(i) = mean(correct{:,:});
         [stats.ci(i,1) stats.ci(i,2)] = calcCI(stats.avg(i), stats.sample_size(i));
     end
+    
+    fprintf('glmfit Task (MOT / VWM) by Load (single / dual)\n');
+    fprintf('Single task: ');
+    task_flags = strcmp(results.response_type, 'MOT'); % MOT = 1; VWM = 0
+    load_flags = ~strcmp(results.condition, 'Both'); % Dual = 0; Single = 1
+    X = [task_flags load_flags task_flags.*load_flags];
+    [~,~,glmstats] = glmfit(X, results.correct, 'binomial');
+    if glmstats.p(2) < 0.05
+        if glmstats.beta(2) > 0
+            difference = 'MOT < VWM';
+        else
+            difference = 'MOT < VWM';
+        end
+    else
+        difference = 'MOT = VWM';
+    end
+    fprintf('%s | B=%.3f, t(%d)=%.3f, p=%.3f\n',...
+        difference,glmstats.beta(2),glmstats.dfe,glmstats.t(2),glmstats.p(2));
+    
+    task_flags = strcmp(results.response_type, 'MOT'); % MOT = 1; VWM = 0
+    load_flags = strcmp(results.condition, 'Both'); % Dual = 1; Single = 0
+    X = [task_flags load_flags task_flags.*load_flags];
+    [~,~,glmstats] = glmfit(X, results.correct, 'binomial');
+    fprintf('Dual task: ');
+    if glmstats.p(2) < 0.05
+        if glmstats.beta(2) > 0
+            difference = 'MOT < VWM';
+        else
+            difference = 'MOT < VWM';
+        end
+    else
+        difference = 'MOT = VWM';
+    end
+    fprintf('%s | B=%.3f, t(%d)=%.3f, p=%.3f\n',...
+        difference,glmstats.beta(2),glmstats.dfe,glmstats.t(2),glmstats.p(2));
+    
+    fprintf('MOT: ');
+    if glmstats.p(3) < 0.05
+        if glmstats.beta(3) > 0
+            difference = 'Single > Dual';
+        else
+            difference = 'Single > Dual';
+        end
+    else
+        difference = 'Single = Dual';
+    end
+    fprintf('%s | B=%.3f, t(%d)=%.3f, p=%.3f\n',...
+        difference,glmstats.beta(3),glmstats.dfe,glmstats.t(3),glmstats.p(3));
+    
+    task_flags = strcmp(results.response_type, 'VWM'); % MOT = 0; VWM = 1
+    load_flags = strcmp(results.condition, 'Both'); % Dual = 1; Single = 0
+    X = [task_flags load_flags task_flags.*load_flags];
+    [~,~,glmstats] = glmfit(X, results.correct, 'binomial');
+    fprintf('VWM: ');
+    if glmstats.p(3) < 0.05
+        if glmstats.beta(3) > 0
+            difference = 'Single > Dual';
+        else
+            difference = 'Single > Dual';
+        end
+    else
+        difference = 'Single = Dual';
+    end
+    fprintf('%s | B=%.3f, t(%d)=%.3f, p=%.3f\n',...
+        difference,glmstats.beta(3),glmstats.dfe,glmstats.t(3),glmstats.p(3));
+    
+    fprintf('\n');
 end
 
 function results = getResults(subject_name)
@@ -132,6 +217,9 @@ function graph_all(stats, subject_names)
     % Draw bars
     figure('Color','white');
     bar(x', m');
+    set(gca,'FontName','Times New Roman');
+    set(gca,'FontSize',12);
+    set(gca,'Color','white');
     box off;
     hold all;
     
