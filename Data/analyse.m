@@ -1,4 +1,4 @@
-function [raw_data, stats] = analyse(subject_name, sessions)
+function [raw_data, stats, anovatab] = analyse(subject_name, sessions)
     if nargin < 1
         subject_name = [];
     end
@@ -25,7 +25,7 @@ function [raw_data, stats] = analyse(subject_name, sessions)
             stats(i) = stats_tmp;
         else
             fprintf('%s results table does not contain valid session information. Skipped.\n', subject_names{i});
-            stats(i) = struct('correct',[], 'sample_size', [], 'avg', [], 'ci', [], 'name', subject_names{i});
+            stats(i) = struct('correct',[], 'sample_size', [], 'avg', [], 'ci', [], 'comparisons', [], 'name', subject_names{i});
         end
     end
     
@@ -37,34 +37,18 @@ function [raw_data, stats] = analyse(subject_name, sessions)
         graph_subject_names = subject_names;
         graph_subject_names(idx) = [];
 
-        graph_stats(size(graph_stats, 2) + 1) = calcGroupStats(graph_stats);
+        [graph_stats(size(graph_stats, 2) + 1), anovatab] = calcGroupStats(graph_stats);
         graph_subject_names{size(graph_subject_names, 2) + 1} = 'Group';
-        %graph_all(graph_stats, graph_subject_names);
-        
-        fprintf('\nTwo-way ANOVA Task (MOT / VWM) by Load (Single / Dual)\n');
-        nC = size(graph_stats(1).avg, 2);
-        n = size(graph_stats, 2) - 1;
-        x = repmat(1:size(graph_subject_names, 2), nC, 1);
-        m = reshape([graph_stats.avg], nC, size(graph_stats, 2));
-        ci = reshape([graph_stats.ci], size(x, 1), 2, size(x, 2));
-        X = [m(1,1:n) m(3,1:n); m(2,1:n) m(4,1:n)]';
-        [p,anovatab,anova_stats] = anova2(X, n, 'off');
-        anovatab{2,1} = 'Single / Dual';
-        anovatab{3,1} = 'MOT / VWM';
-        anovatab
-        
-        fprintf('Group data, MOT, Single vs. Dual');
-        [~,p,~,anova_stats] = ttest(m(1,1:n),m(2,1:n))
-        fprintf('Group data, VWM, Single vs. Dual');
-        [~,p,~,anova_stats] = ttest(m(3,1:n),m(4,1:n))
+        graph_all(graph_stats, graph_subject_names);
         
         stats_tmp = graph_stats(size(graph_stats, 2));
         stats_tmp.name = 'Group';
         stats(i) = stats_tmp;
     else
         graph_session(stats(1), subject_names{1});
+        anovatab = {};
     end
-    stats = orderfields(stats, [5, 1, 3, 4, 2]);
+    stats = orderfields(stats, [6, 1, 3, 4, 5, 2]);
 end
 
 function subject_names = getSubjectNames()
@@ -82,7 +66,7 @@ function subject_names = getSubjectNames()
     end
 end
 
-function stats = calcGroupStats(graph_stats)
+function [stats, anovatab] = calcGroupStats(graph_stats)
     nC = size(graph_stats(1).avg, 2);
     m = reshape([graph_stats.avg], nC, size(graph_stats, 2));
     n = size(m, 2);
@@ -99,96 +83,73 @@ function stats = calcGroupStats(graph_stats)
     stats.sample_size = repmat(n, 1, nC);
     stats.avg = m(:, n + 1)';
     stats.ci = [m(:, n + 1)-sem*1.96 m(:, n + 1)+sem*1.96];
+
+    % Two-way ANOVA
+    x = repmat(1:n, nC, 1);
+    X = [m(1,1:n) m(3,1:n); m(2,1:n) m(4,1:n)]';
+    [~,anovatab,~] = anova2(X, n, 'off');
+    anovatab{2,1} = 'Single / Dual';
+    anovatab{3,1} = 'MOT / VWM';
+
+    % Planned comparisons
+    stats.comparisons(1, :) = {'t test', 't', 'df', 'sd', 'p'};
+    [~,p,~,t_stats] = ttest(m(1,1:n),m(3,1:n));
+    stats.comparisons(2, :) = {'Single MOT vs. VWM', t_stats.tstat, t_stats.df, t_stats.sd, p};
+    [~,p,~,t_stats] = ttest(m(2,1:n),m(4,1:n));
+    stats.comparisons(3, :) = {'Dual MOT vs. VWM', t_stats.tstat, t_stats.df, t_stats.sd, p};
+    [~,p,~,t_stats] = ttest(m(1,1:n),m(2,1:n));
+    stats.comparisons(4, :) = {'MOT Single vs. Dual', t_stats.tstat, t_stats.df, t_stats.sd, p};
+    [~,p,~,t_stats] = ttest(m(3,1:n),m(4,1:n));
+    stats.comparisons(5, :) = {'VWM Single vs. Dual', t_stats.tstat, t_stats.df, t_stats.sd, p};
+
     stats.name = 'Group';
 end
 
 function stats = calcStats(results, sessions)
+    if isempty(sessions)
+        sessions = 1:max(unique(results.session));
+    end
+    idx = zeros(size(results.session));
+    for j = sessions
+        idx = idx | results.session==j;
+    end
+    results = results(idx, :);
     conditions = [strcmp(results.condition, 'MOT')==1, ...
                   strcmp(results.condition, 'Both')==1 & strcmp(results.response_type, 'MOT')==1, ...
                   strcmp(results.condition, 'VWM')==1, ...
                   strcmp(results.condition, 'Both')==1 & strcmp(results.response_type, 'VWM')==1];              
+    
     for i = 1:4
-        if isempty(sessions)
-            correct = results(conditions(:, i), {'correct'});
-        else
-            idx = zeros(size(results.session));
-            for j = sessions
-                idx = idx | results.session==j & conditions(:, i);
-            end
-            correct = results(idx, {'correct'});
-        end
+        correct = results(conditions(:, i), {'correct'});
+
         stats.correct{i} = correct;
         stats.sample_size(i) = size(correct, 1);
         stats.avg(i) = mean(correct{:,:});
         [stats.ci(i,1) stats.ci(i,2)] = calcCI(stats.avg(i), stats.sample_size(i));
     end
+    % Planned comparisons
     
-    fprintf('glmfit Task (MOT / VWM) by Load (single / dual)\n');
-    fprintf('Single task: ');
     task_flags = strcmp(results.response_type, 'MOT'); % MOT = 1; VWM = 0
     load_flags = ~strcmp(results.condition, 'Both'); % Dual = 0; Single = 1
     X = [task_flags load_flags task_flags.*load_flags];
     [~,~,glmstats] = glmfit(X, results.correct, 'binomial');
-    if glmstats.p(2) < 0.05
-        if glmstats.beta(2) > 0
-            difference = 'MOT < VWM';
-        else
-            difference = 'MOT < VWM';
-        end
-    else
-        difference = 'MOT = VWM';
-    end
-    fprintf('%s | B=%.3f, t(%d)=%.3f, p=%.3f\n',...
-        difference,glmstats.beta(2),glmstats.dfe,glmstats.t(2),glmstats.p(2));
+    glmfit_table(1, :) = {'Logistic regression', 'B', 'df', 't', 'p'};
+    glmfit_table(2, :) = {'Single MOT vs. VWM', glmstats.beta(2), glmstats.dfe, glmstats.t(2), glmstats.p(2)};
     
     task_flags = strcmp(results.response_type, 'MOT'); % MOT = 1; VWM = 0
     load_flags = strcmp(results.condition, 'Both'); % Dual = 1; Single = 0
     X = [task_flags load_flags task_flags.*load_flags];
     [~,~,glmstats] = glmfit(X, results.correct, 'binomial');
-    fprintf('Dual task: ');
-    if glmstats.p(2) < 0.05
-        if glmstats.beta(2) > 0
-            difference = 'MOT < VWM';
-        else
-            difference = 'MOT < VWM';
-        end
-    else
-        difference = 'MOT = VWM';
-    end
-    fprintf('%s | B=%.3f, t(%d)=%.3f, p=%.3f\n',...
-        difference,glmstats.beta(2),glmstats.dfe,glmstats.t(2),glmstats.p(2));
-    
-    fprintf('MOT: ');
-    if glmstats.p(3) < 0.05
-        if glmstats.beta(3) > 0
-            difference = 'Single > Dual';
-        else
-            difference = 'Single > Dual';
-        end
-    else
-        difference = 'Single = Dual';
-    end
-    fprintf('%s | B=%.3f, t(%d)=%.3f, p=%.3f\n',...
-        difference,glmstats.beta(3),glmstats.dfe,glmstats.t(3),glmstats.p(3));
+    glmfit_table(3, :) = {'Dual MOT vs. VWM', glmstats.beta(2), glmstats.dfe, glmstats.t(2), glmstats.p(2)};
+    glmfit_table(4, :) = {'MOT Single vs. Dual', glmstats.beta(3), glmstats.dfe, glmstats.t(3), glmstats.p(3)};
     
     task_flags = strcmp(results.response_type, 'VWM'); % MOT = 0; VWM = 1
     load_flags = strcmp(results.condition, 'Both'); % Dual = 1; Single = 0
     X = [task_flags load_flags task_flags.*load_flags];
     [~,~,glmstats] = glmfit(X, results.correct, 'binomial');
-    fprintf('VWM: ');
-    if glmstats.p(3) < 0.05
-        if glmstats.beta(3) > 0
-            difference = 'Single > Dual';
-        else
-            difference = 'Single > Dual';
-        end
-    else
-        difference = 'Single = Dual';
-    end
-    fprintf('%s | B=%.3f, t(%d)=%.3f, p=%.3f\n',...
-        difference,glmstats.beta(3),glmstats.dfe,glmstats.t(3),glmstats.p(3));
-    
-    fprintf('\n');
+    glmfit_table(5, :) = {'VWM Single vs. Dual', glmstats.beta(3), glmstats.dfe, glmstats.t(3), glmstats.p(3)};
+
+    stats.comparisons = glmfit_table;
 end
 
 function results = getResults(subject_name)
