@@ -1,4 +1,4 @@
-function [results, stats, subject_names] = analyse(subject_name, sessions)
+function [raw_data, stats] = analyse(subject_name, sessions)
     if nargin < 1
         subject_name = [];
     end
@@ -12,18 +12,20 @@ function [results, stats, subject_names] = analyse(subject_name, sessions)
     else
         error('Invalid subject_name: %s\n', subject_name);
     end
-    results = {};
+    raw_data = {};
     
     for i = 1:size(subject_names, 2)
-        results{i} = getResults(subject_names{i});
-        if     ismember('session', results{i}.Properties.VariableNames) ...
-            && ismember('condition', results{i}.Properties.VariableNames) ...
-            && ismember('response_type', results{i}.Properties.VariableNames) ...
-            && ismember('correct', results{i}.Properties.VariableNames)
-            stats(i) = calcStats(results{i}, sessions);
+        raw_data{i} = getResults(subject_names{i});
+        if     ismember('session', raw_data{i}.Properties.VariableNames) ...
+            && ismember('condition', raw_data{i}.Properties.VariableNames) ...
+            && ismember('response_type', raw_data{i}.Properties.VariableNames) ...
+            && ismember('correct', raw_data{i}.Properties.VariableNames)
+            stats_tmp = calcStats(raw_data{i}, sessions);
+            stats_tmp.name = subject_names{i};
+            stats(i) = stats_tmp;
         else
             fprintf('%s results table does not contain valid session information. Skipped.\n', subject_names{i});
-            stats(i) = struct('correct',[], 'sample_size', [], 'avg', [], 'ci', []);
+            stats(i) = struct('correct',[], 'sample_size', [], 'avg', [], 'ci', [], 'name', subject_names{i});
         end
     end
     
@@ -56,10 +58,13 @@ function [results, stats, subject_names] = analyse(subject_name, sessions)
         fprintf('Group data, VWM, Single vs. Dual');
         [~,p,~,anova_stats] = ttest(m(3,1:n),m(4,1:n))
         
-        
+        stats_tmp = graph_stats(size(graph_stats, 2));
+        stats_tmp.name = 'Group';
+        stats(i) = stats_tmp;
     else
         graph_session(stats(1), subject_names{1});
     end
+    stats = orderfields(stats, [5, 1, 3, 4, 2]);
 end
 
 function subject_names = getSubjectNames()
@@ -91,9 +96,10 @@ function stats = calcGroupStats(graph_stats)
     sd = v.^2 *(nC/(nC-1));
     sem = sd/sqrt(n);
     stats.correct = [];
-    stats.sample_size = n;
+    stats.sample_size = repmat(n, 1, nC);
     stats.avg = m(:, n + 1)';
     stats.ci = [m(:, n + 1)-sem*1.96 m(:, n + 1)+sem*1.96];
+    stats.name = 'Group';
 end
 
 function stats = calcStats(results, sessions)
