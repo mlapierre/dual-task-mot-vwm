@@ -48,7 +48,7 @@ function [raw_data, stats, anovatab] = analyse(subject_name, sessions)
         graph_session(stats(1), subject_names{1});
         anovatab = {};
     end
-    stats = orderfields(stats, [5, 1, 3, 4, 2]);
+    stats = orderfields(stats, [5, 2, 3, 4, 1]);
 end
 
 function subject_names = getSubjectNames()
