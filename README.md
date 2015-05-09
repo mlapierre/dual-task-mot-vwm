@@ -72,22 +72,42 @@ This will test participant mark_l on 60 trials with 4, 5, or 6 discs (with MOT d
 
 Use `analyse` to analyse the data for a participant. E.g:
 
-    analyse('mark_l')
+    [raw_data, stats, anovatab] = analyse('mark_l');
 
-This will display a graph of the performance for each condition for all sessions. Error bars represent 95% confidence intervals. It will also output the results of inferential tests.
+This will display a graph of the performance for each condition for all sessions. Error bars represent 95% confidence intervals. It will also return the results of inferential tests.
 
-You can view the results for a subset of sessions, e.g., if you need to see the performance for a single session:
+You analyse a subset of sessions, e.g., if you need to see the performance for a single session:
 
-    analyse('mark_l', 4)
+    [raw_data, stats, anovatab] = analyse('mark_l', 4);
 
 Or for a range of sessions:
 
-    analyse('mark_l', 1:7)
+    [raw_data, stats, anovatab] = analyse('mark_l', 1:7);
 
-To view the results for all participants in a single graph, leave out the participant name:
+To analyse the data for all participants at once, leave out the participant name:
 
-    analyse()
+    [raw_data, stats, anovatab] = analyse();
 
-To graph a subset of sessions for all participants, enter an empty array instead of the subject name and then specify the sessions:
+To analyse a subset of sessions for all participants, enter an empty array instead of the subject name and then specify the sessions:
 
-    analyse([], 1:5)
+    [raw_data, stats, anovatab] = analyse([], 1:5);
+
+### Return values
+
+'raw_data' contains a table for each participant. Each table contains the raw data captured during the experiment. Each row of the table is one observation of:
+  session       - The session in which the observation was made
+  condition     - Which tasks were performed, MOT, VWM, or Both.
+  correct       - Whether or not the response was correct
+  response_type - Whether the observer was to make an MOT or a VWM response
+  valid_probe   - Whether or not the probe was placed on a valid target
+  speed         - The speed at which the MOT discs moved
+  vwm_discs     - The number of VWM discs
+
+'stats' contains summaries and the results of statistical analyses.
+  name          - The observer's name (or 'Group' for the aggregate analyses)
+  avg           - Mean correct per condition (MOT only, MOT dual, VWM only, VWM dual)
+  ci            - 95% confidence interval per condition (upper and lower values)
+  comparisons   - Results of planned comparisons (t-test for aggregate data and logistic regression for each observer)
+  samples_size  - Number of observations per condition
+
+'anovatab' contains the results of a two-way task (MOT, VWM) by load (single, dual) ANOVA of all observers' mean accuracy 
