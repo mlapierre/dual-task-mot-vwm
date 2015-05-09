@@ -25,7 +25,7 @@ function [raw_data, stats, anovatab] = analyse(subject_name, sessions)
             stats(i) = stats_tmp;
         else
             fprintf('%s results table does not contain valid session information. Skipped.\n', subject_names{i});
-            stats(i) = struct('correct',[], 'sample_size', [], 'avg', [], 'ci', [], 'comparisons', [], 'name', subject_names{i});
+            stats(i) = struct('sample_size', [], 'avg', [], 'ci', [], 'comparisons', [], 'name', subject_names{i});
         end
     end
     
@@ -48,7 +48,7 @@ function [raw_data, stats, anovatab] = analyse(subject_name, sessions)
         graph_session(stats(1), subject_names{1});
         anovatab = {};
     end
-    stats = orderfields(stats, [6, 1, 3, 4, 5, 2]);
+    stats = orderfields(stats, [5, 1, 3, 4, 2]);
 end
 
 function subject_names = getSubjectNames()
@@ -79,7 +79,6 @@ function [stats, anovatab] = calcGroupStats(graph_stats)
     v = sqrt(std(norm,0,2));
     sd = v.^2 *(nC/(nC-1));
     sem = sd/sqrt(n);
-    stats.correct = [];
     stats.sample_size = repmat(n, 1, nC);
     stats.avg = m(:, n + 1)';
     stats.ci = [m(:, n + 1)-sem*1.96 m(:, n + 1)+sem*1.96];
@@ -122,7 +121,6 @@ function stats = calcStats(results, sessions)
     for i = 1:4
         correct = results(conditions(:, i), {'correct'});
 
-        stats.correct{i} = correct;
         stats.sample_size(i) = size(correct, 1);
         stats.avg(i) = mean(correct{:,:});
         [stats.ci(i,1) stats.ci(i,2)] = calcCI(stats.avg(i), stats.sample_size(i));
