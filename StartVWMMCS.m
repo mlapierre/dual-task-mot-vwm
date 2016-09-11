@@ -44,14 +44,14 @@ function StartVWMMCS(subject_name)
     nAttempts = size(mot_mcs_data, 2);
     speed = mot_mcs_data{nAttempts}.speedFinal;
 
-    ListenChar(2);
+    %ListenChar(2);
     fprintf('As per MOT calibration, MOT discs will move at speed %f\n', speed);
     fprintf('If this is correct, please press ''y'' to begin the first stage, otherwise press ''n'' to enter a different speed...\n');
     char = GetKbChar();
     if char == 'n'
-        ListenChar(0);
+        %ListenChar(0);
         speed = input('Please enter the correct speed: ');
-        ListenChar(2);
+        %ListenChar(2);
         fprintf('MOT discs will move at speed %f\n', speed);
     end
     disc_count = VWM_MCS(subject_name, 50, 3:7, speed);
@@ -65,7 +65,7 @@ function StartVWMMCS(subject_name)
     fprintf('Please press ''y'' to begin the second stage, or any other key to quit...\n');
     char = GetKbChar();
     if char ~= 'y'
-        ListenChar(0);
+        %ListenChar(0);
         return
     end
     VWM_MCS(subject_name, 60, disc_count-1:disc_count+1, speed);
@@ -81,5 +81,5 @@ function StartVWMMCS(subject_name)
     
     vwm_mcs_data{nAttempts}.disc_count_final = round(disc_count);
     save(data_fn, 'vwm_mcs_data', 'vwm_mcs_config', '-append');
-    ListenChar(0);
+    %ListenChar(0);
 end

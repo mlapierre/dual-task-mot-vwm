@@ -35,7 +35,7 @@ function StartMOTMCS(subject_name)
         load(data_fn);
     end
     
-    ListenChar(2);
+    %ListenChar(2);
     fprintf('Please press a key to begin the first stage...\n');
     GetKbChar();
     speed = MOT_MCS(subject_name, 50, 10, 2);
@@ -43,7 +43,7 @@ function StartMOTMCS(subject_name)
     fprintf('Please press ''y'' to begin the second stage, or any other key to quit...\n');
     char = GetKbChar();
     if char ~= 'y'
-        ListenChar(0);
+        %ListenChar(0);
         return
     end
     MOT_MCS(subject_name, 50, speed, 1);
@@ -54,5 +54,5 @@ function StartMOTMCS(subject_name)
     [mot_mcs_data{nAttempts}.speedFinal mot_mcs_data{nAttempts}.qFinal] = analyseMOTMCS(subject_name, [nAttempts nAttempts-1]);
     
     save(data_fn, 'mot_mcs_data', 'mot_mcs_config', '-append');
-    ListenChar(0);
+    %ListenChar(0);
 end

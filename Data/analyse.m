@@ -57,11 +57,11 @@ function subject_names = getSubjectNames()
     for i = 1:size(d, 1)
         data_fn = ['data' filesep d(i).name];
         vars = whos('-file', data_fn);
-        if ismember('results', {vars.name})
+        if ismember('results', {vars.name}) 
             [~, name, ~] = fileparts(data_fn);
-            subject_names{size(subject_names, 2)+1} = name;
-        else
-            fprintf('%s does not contain results. Skipped\n', data_fn);
+            if isempty(regexp(name, '[Session]', 'start')) 
+                subject_names{size(subject_names, 2)+1} = name;
+            end
         end
     end
 end
@@ -205,6 +205,8 @@ function graph_all(stats, subject_names)
         set(h, 'Color', colours(5,:));
         set(ch(2), 'FaceColor', colours(i,:));
     end
+    [im_hatch,~] = applyhatch_pluscolor(gcf,'\|/+.-',1,[],[],300,1.5,1);
+    imwrite(im_hatch,'figa1.tif','tiff','Resolution',300,'Compression','lzw');    
 end
 
 function graph_session(stats, subject_name)
